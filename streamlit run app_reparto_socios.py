@@ -3,12 +3,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="Reparto de Socios", layout="wide")
-st.title("🧮 Calculadora de Participaciones entre Socios")
+st.title("Calculadora de Participaciones entre Socios")
 
 st.markdown("Esta herramienta permite calcular participaciones con lógica por bloques + % blindado.")
 
 # Pesos configurables
-st.sidebar.header("⚙️ Pesos por Bloque")
+st.sidebar.header(" Pesos por Bloque")
 pesos = {
     "Concepto, Idea e IP Fundacional": st.sidebar.slider("Concepto (%)", 0, 100, 30),
     "Inversión Económica Inicial": st.sidebar.slider("Inversión (%)", 0, 100, 30),
@@ -20,7 +20,7 @@ total_peso = sum(pesos.values())
 if total_peso != 100:
     st.sidebar.error(f"La suma de pesos debe ser 100%. Ahora suma: {total_peso}%")
 
-st.subheader("👥 Datos de Socios")
+st.subheader("Datos de Socios")
 num_socios = st.number_input("Número de socios", min_value=1, max_value=10, value=4)
 socios_data = []
 
@@ -45,7 +45,7 @@ if st.button("📊 Calcular Participaciones"):
     total = df["% Final Bruto"].sum()
     df["% Final Normalizado"] = df["% Final Bruto"] / total * 100
 
-    st.subheader("📄 Resultados")
+    st.subheader("Resultados")
     st.dataframe(df[["Socio"] + [f"{b} (%)" for b in pesos] + ["Participación Técnica", "% Blindado", "% Final Bruto", "% Final Normalizado"]])
 
     # Gráfico
