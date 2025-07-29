@@ -2,76 +2,74 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="Reparto de Socios", layout="wide")
-st.title("🧮 Calculadora de Participaciones entre Socios")
+st.set_page_config(page_title="Reparto Socios e Inversores", layout="wide")
+st.title("Reparto de Participaciones entre Socios e Inversores")
 
-st.markdown("Esta herramienta permite calcular participaciones con lógica por bloques + % blindado.")
+# --- Configuración inicial ---
+pesos = {"Trabajo": 30, "Capital": 30, "Experiencia": 20, "Red de contactos": 20}
 
-# Pesos configurables
-st.sidebar.header("⚙️ Pesos por Bloque")
-pesos = {
-    "Concepto, Idea e IP Fundacional": st.sidebar.slider("Concepto (%)", 0, 100, 30),
-    "Inversión Económica Inicial": st.sidebar.slider("Inversión (%)", 0, 100, 30),
-    "Operaciones y Gestión": st.sidebar.slider("Operaciones (%)", 0, 100, 25),
-    "Estrategia, Dirección, Marketing": st.sidebar.slider("Estrategia (%)", 0, 100, 15)
-}
+st.sidebar.header("Configuración de Pesos (%)")
+for clave in pesos:
+    pesos[clave] = st.sidebar.slider(clave, 0, 100, pesos[clave], 1)
 
-total_peso = sum(pesos.values())
-if total_peso != 100:
-    st.sidebar.error(f"La suma de pesos debe ser 100%. Ahora suma: {total_peso}%")
-
-st.subheader("👥 Datos de Socios")
-num_socios = st.number_input("Número de socios", min_value=1, max_value=10, value=4)
+# --- Input de socios ---
+num_socios = st.number_input("Número de socios", min_value=1, max_value=10, value=3)
 socios_data = []
 
 for i in range(num_socios):
     nombre = st.text_input(f"Nombre del socio {i+1}", key=f"nombre_{i}")
-    bloque_vals = []
-    for bloque in pesos:
-        val = st.slider(f"{bloque} - {nombre}", 0, 100, 0, key=f"bloque_{bloque}_{i}")
-        bloque_vals.append(val)
-    blindado = st.number_input(f"% Blindado para {nombre}", min_value=0.0, max_value=100.0, value=0.0, key=f"blindado_{i}")
-    socios_data.append([nombre] + bloque_vals + [blindado])
-
-if st.button("📊 Calcular Participaciones"):
-    columnas = ["Socio"] + list(pesos.keys()) + ["% Blindado"]
-    df = pd.DataFrame(socios_data, columns=columnas)
-
-    # Cálculo técnico
+    valores = []
     for b in pesos:
-        df[f"{b} (%)"] = (df[b] / 100) * pesos[b]
-    df["Participación Técnica"] = df[[f"{b} (%)" for b in pesos]].sum(axis=1)
-    df["% Final Bruto"] = df["Participación Técnica"] + df["% Blindado"]
-    total = df["% Final Bruto"].sum()
-    df["% Final Normalizado"] = df["% Final Bruto"] / total * 100
+        val = st.slider(f"{b} - {nombre}", 0, 100, key=f"bloque_{b}_{i}")
+        valores.append(val)
+    blindado = st.number_input(f"% Blindado para {nombre}", min_value=0.0, max_value=100.0, value=0.0, step=1.0, key=f"blindado_{i}")
+    socios_data.append([nombre] + valores + [blindado])
 
-    st.subheader("📄 Resultados")
-    st.dataframe(df[["Socio"] + [f"{b} (%)" for b in pesos] + ["Participación Técnica", "% Blindado", "% Final Bruto", "% Final Normalizado"]])
+# --- Input de inversores ---
+st.subheader("Datos de Inversores")
+num_inversores = st.number_input("Número de inversores", min_value=0, max_value=10, value=1)
+inversores_data = []
+valor_total_negocio = st.number_input("Valor estimado del negocio (€)", min_value=1000.0, value=100000.0, step=1000.0)
 
-    # Gráfico
-    fig, ax = plt.subplots()
-    ax.pie(df["% Final Normalizado"], labels=df["Socio"], autopct="%1.1f%%", startangle=90)
-    ax.axis("equal")
-    st.pyplot(fig)
+for j in range(num_inversores):
+    nombre_inv = st.text_input(f"Nombre del inversor {j+1}", key=f"inversor_{j}")
+    inversion = st.number_input(f"Aportación monetaria de {nombre_inv} (€)", min_value=0.0, value=10000.0, step=100.0, key=f"inversion_{j}")
+    participacion = (inversion / valor_total_negocio) * 100 if valor_total_negocio else 0.0
+    roi_estimado = participacion * 1.5  # simplificación de ROI estimado
+    inversores_data.append([nombre_inv, inversion, participacion, roi_estimado])
 
-    # Descarga CSV
-    st.download_button("⬇️ Descargar como CSV", data=df.to_csv(index=False), file_name="reparto_socios.csv", mime="text/csv")
+# --- Botón de cálculo ---
+if st.button("📊 Calcular Participaciones Totales"):
+    columnas_socios = ["Socio"] + [f"{b} (%)" for b in pesos] + ["% Blindado"]
+    df_socios = pd.DataFrame(socios_data, columns=columnas_socios)
 
-header(" Cálculo de participación para inversores")
+    # Cálculo de participación
+    for b in pesos:
+        df_socios[f"{b} (%)"] = df_socios[f"{b} (%)"] * pesos[b] / 100
+    df_socios["Participación Técnica"] = df_socios[[f"{b} (%)" for b in pesos]].sum(axis=1)
+    df_socios["% Final Bruto"] = df_socios["Participación Técnica"] + df_socios["% Blindado"]
+    total = df_socios["% Final Bruto"].sum()
+    df_socios["% Final Normalizado"] = df_socios["% Final Bruto"] / total * 100 if total else 0
 
-valor_negocio = st.number_input("Valor actual del negocio (€)", min_value=0.0, step=1000.0)
-aportacion = st.number_input("Aportación del inversor (€)", min_value=0.0, step=1000.0)
+    st.subheader("📋 Participación de Socios")
+    st.dataframe(df_socios)
 
-if valor_negocio > 0 and aportacion > 0:
-    participacion_inversor = (aportacion / (valor_negocio + aportacion)) * 100
-    participacion_socios = df["% Final Normalizado"].sum()
-    disponible = 100 - participacion_socios
-
-    st.write(f"Participación lógica del inversor: **{participacion_inversor:.2f}%**")
-    st.write(f"Participación actual de socios: **{participacion_socios:.2f}%**")
-    st.write(f"Participación disponible: **{disponible:.2f}%**")
-
-    if participacion_inversor > disponible:
-        st.warning(" La participación calculada para el inversor supera el % disponible. Revisa condiciones.")
+    # --- Gráfico ---
+    if df_socios["% Final Normalizado"].sum() == 0 or df_socios["% Final Normalizado"].isnull().any():
+        st.warning("⚠️ No es posible generar el gráfico: los valores no son válidos o suman 0.")
     else:
-        st.success(" Participación del inversor posible dentro del % disponible.")
+        fig, ax = plt.subplots()
+        ax.pie(df_socios["% Final Normalizado"], labels=df_socios["Socio"], autopct="%1.1f%%", startangle=90)
+        ax.axis("equal")
+        st.pyplot(fig)
+
+    # --- Inversores ---
+    if inversores_data:
+        df_inversores = pd.DataFrame(inversores_data, columns=["Inversor", "Aportación (€)", "% Participación", "ROI Estimado (%)"])
+        st.subheader("💰 Participación de Inversores")
+        st.dataframe(df_inversores)
+
+    # --- Exportar ---
+    st.download_button("⬇️ Descargar socios como CSV", data=df_socios.to_csv(index=False), file_name="socios.csv")
+    if inversores_data:
+        st.download_button("⬇️ Descargar inversores como CSV", data=df_inversores.to_csv(index=False), file_name="inversores.csv")
