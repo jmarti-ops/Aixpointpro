@@ -56,7 +56,7 @@ if st.button("📊 Calcular Participaciones"):
 
     # Descarga CSV
     st.download_button("⬇️ Descargar como CSV", data=df.to_csv(index=False), file_name="reparto_socios.csv", mime="text/csv")
-st.
+
 header(" Cálculo de participación para inversores")
 
 valor_negocio = st.number_input("Valor actual del negocio (€)", min_value=0.0, step=1000.0)
