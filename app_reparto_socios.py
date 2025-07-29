@@ -56,3 +56,22 @@ if st.button("📊 Calcular Participaciones"):
 
     # Descarga CSV
     st.download_button("⬇️ Descargar como CSV", data=df.to_csv(index=False), file_name="reparto_socios.csv", mime="text/csv")
+st.
+header(" Cálculo de participación para inversores")
+
+valor_negocio = st.number_input("Valor actual del negocio (€)", min_value=0.0, step=1000.0)
+aportacion = st.number_input("Aportación del inversor (€)", min_value=0.0, step=1000.0)
+
+if valor_negocio > 0 and aportacion > 0:
+    participacion_inversor = (aportacion / (valor_negocio + aportacion)) * 100
+    participacion_socios = df["% Final Normalizado"].sum()
+    disponible = 100 - participacion_socios
+
+    st.write(f"Participación lógica del inversor: **{participacion_inversor:.2f}%**")
+    st.write(f"Participación actual de socios: **{participacion_socios:.2f}%**")
+    st.write(f"Participación disponible: **{disponible:.2f}%**")
+
+    if participacion_inversor > disponible:
+        st.warning(" La participación calculada para el inversor supera el % disponible. Revisa condiciones.")
+    else:
+        st.success(" Participación del inversor posible dentro del % disponible.")
