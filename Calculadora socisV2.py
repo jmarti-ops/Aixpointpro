@@ -84,15 +84,18 @@ if "mostrar_inversores" in st.session_state and st.session_state["mostrar_invers
         if nombre_inv and aporte > 0:
             participacion = (aporte / valoracion * 100) if valoracion else 0.0
             inversores.append({"nombre": nombre_inv, "aporte": aporte, "participacion": participacion})
-        else:
+        elif nombre_inv or aporte > 0:
             st.warning(f"⚠️ Inversor {i+1} debe tener nombre y aporte mayor a 0")
 
     total_socios = sum([s[-1] for s in socios_data])
+    total_aportes = sum(i["aporte"] for i in inversores)
+    total_participacion_inversores = sum(i["participacion"] for i in inversores)
+    total_valorado = total_socios + total_aportes
+
     socios_df = pd.DataFrame(socios_data, columns=["Nombre"] + list(pesos.keys()) + ["Blindado", "Horas", "CosteHora", "CosteTotal"])
-    socios_df["Participacion"] = socios_df["CosteTotal"] / (total_socios + sum(i["aporte"] for i in inversores)) * (100 - sum(i["participacion"] for i in inversores))
+    socios_df["Participacion"] = socios_df["CosteTotal"] / total_valorado * (100 - total_participacion_inversores) if total_valorado > 0 else 0.0
 
     inversores_df = pd.DataFrame(inversores)
-
     if not inversores_df.empty and all(col in inversores_df.columns for col in ["nombre", "participacion"]):
         inversores_chart = inversores_df[["nombre", "participacion"]].rename(columns={"nombre": "Nombre", "participacion": "Participacion"})
     else:
@@ -104,10 +107,15 @@ if "mostrar_inversores" in st.session_state and st.session_state["mostrar_invers
     st.subheader("Distribución de Participaciones")
     st.dataframe(chart_df)
 
-    fig, ax = plt.subplots()
-    ax.pie(chart_df["Participacion"], labels=chart_df["Nombre"], autopct="%1.1f%%")
-    ax.axis("equal")
-    st.pyplot(fig)
+    if chart_df.empty or chart_df["Participacion"].sum() <= 0:
+        st.warning("⚠️ No hay datos válidos para graficar. Verifica socios e inversores.")
+    elif chart_df["Participacion"].sum() > 100:
+        st.error("❌ La suma de participaciones excede el 100%. Revisa aportes o valoración.")
+    else:
+        fig, ax = plt.subplots()
+        ax.pie(chart_df["Participacion"], labels=chart_df["Nombre"], autopct="%1.1f%%")
+        ax.axis("equal")
+        st.pyplot(fig)
 
     session_state["inversores"] = inversores
     with open(STORAGE_FILE, "w", encoding="utf-8") as f:
