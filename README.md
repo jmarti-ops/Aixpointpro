@@ -1,55 +1,62 @@
-# Aixpointpro – Cálculo Lógico de Participaciones en Startups
+# Aixpointpro – Logical Equity Distribution for Startups
 
-Aplicación desarrollada en Streamlit para calcular de forma lógica, transparente y visual las participaciones societarias en proyectos emprendedores. Incluye una estimación de reparto por bloques (idea, gestión, inversión...) y un módulo para inversores con cálculo automático de participación en función de la valoración de la empresa.
+This project provides a Streamlit app to calculate partner shares and investor participation in a startup. The interface lets you weigh different contribution blocks, lock percentages for each partner and compute the impact of external investors.
 
-## Características principales
+## Main Features
 
-- Reparto por bloques ponderados:
-  - Concepto e IP Fundacional
-  - Inversión Económica Inicial
-  - Operaciones y Gestión
-  - Estrategia y Marketing
+- Weighted distribution by block:
+  - Concept, Idea and Foundational IP
+  - Initial Economic Investment
+  - Operations and Management
+  - Strategy, Direction and Marketing
+- Locked percentage per partner
+- Interactive pie chart visualization
+- Investor participation calculator
+- Export results to CSV
+- Data stored in `session_data.json` with a sidebar option to clear saved values
 
-- % blindado configurable por socio
-- Visualización interactiva en gráfico circular
-- Módulo de cálculo de participación para inversores
-- Exportación de resultados a CSV
-
-##  Tecnologías
+## Technologies
 
 - Python
 - Streamlit
 - Pandas
 - Matplotlib
+- XlsxWriter
 
-##  Requisitos
-
-Asegúrate de tener las siguientes dependencias (usadas en `requirements.txt`):
-
-```
-streamlit
-pandas
-matplotlib
-```
-
-##  Cómo ejecutar localmente
+## Running locally
 
 ```bash
-# Clona el repo
-git clone https://github.com/jmarti-ops/Aixpointpro.git
+# Clone the repo
+git clone <repo-url>
 cd Aixpointpro
 
-# Instala dependencias
+# Install dependencies
 pip install -r requirements.txt
 
-# Lanza la app
+# Launch the app
 streamlit run app_reparto_full.py
 ```
 
-## 🌐 Despliegue en Streamlit Cloud
+## Deploying on Streamlit Cloud
 
-Puedes desplegar fácilmente esta app en [streamlit.io](https://share.streamlit.io) conectando este repositorio y especificando como archivo principal `app_reparto_full.py`.
+1. Open [Streamlit Cloud](https://share.streamlit.io/) and choose **New app**.
+2. Point to this repository and set `streamlit_app.py` as the main file.
+3. The application will start automatically once the requirements are installed.
+
+## Project Structure
+
+```
+Aixpointpro/
+├── app_reparto_full.py  # main Streamlit application
+├── streamlit_app.py     # entry point used by Streamlit Cloud
+├── Calculadora socisV2.py
+├── app.py
+├── app2.py
+├── requirements.txt
+└── .streamlit/
+    └── config.toml
+```
 
 ---
 
-Desarrollado con  por Jordi Martí.
+Developed by Jordi Martí.
