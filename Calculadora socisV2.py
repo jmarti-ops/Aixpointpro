@@ -81,16 +81,24 @@ if "mostrar_inversores" in st.session_state and st.session_state["mostrar_invers
     for i in range(num_inversores):
         nombre_inv = st.text_input(f"Nombre del inversor {i+1}", value=saved_session.get("inversores", [{}]*num_inversores)[i].get("nombre", ""), key=f"inv_nombre_{i}")
         aporte = st.number_input(f"Aporte de {nombre_inv or 'Inversor '+str(i+1)} (€)", min_value=0.0, step=100.0, value=saved_session.get("inversores", [{}]*num_inversores)[i].get("aporte", 0.0), key=f"inv_aporte_{i}")
-        participacion = (aporte / valoracion * 100) if valoracion else 0.0
-        inversores.append({"nombre": nombre_inv, "aporte": aporte, "participacion": participacion})
+        if nombre_inv and aporte > 0:
+            participacion = (aporte / valoracion * 100) if valoracion else 0.0
+            inversores.append({"nombre": nombre_inv, "aporte": aporte, "participacion": participacion})
+        else:
+            st.warning(f"⚠️ Inversor {i+1} debe tener nombre y aporte mayor a 0")
 
     total_socios = sum([s[-1] for s in socios_data])
     socios_df = pd.DataFrame(socios_data, columns=["Nombre"] + list(pesos.keys()) + ["Blindado", "Horas", "CosteHora", "CosteTotal"])
     socios_df["Participacion"] = socios_df["CosteTotal"] / (total_socios + sum(i["aporte"] for i in inversores)) * (100 - sum(i["participacion"] for i in inversores))
 
     inversores_df = pd.DataFrame(inversores)
+
+    if not inversores_df.empty and all(col in inversores_df.columns for col in ["nombre", "participacion"]):
+        inversores_chart = inversores_df[["nombre", "participacion"]].rename(columns={"nombre": "Nombre", "participacion": "Participacion"})
+    else:
+        inversores_chart = pd.DataFrame(columns=["Nombre", "Participacion"])
+
     socios_chart = socios_df[["Nombre", "Participacion"]]
-    inversores_chart = inversores_df[["nombre", "participacion"]].rename(columns={"nombre": "Nombre", "participacion": "Participacion"})
     chart_df = pd.concat([socios_chart, inversores_chart], ignore_index=True)
 
     st.subheader("Distribución de Participaciones")
@@ -101,7 +109,6 @@ if "mostrar_inversores" in st.session_state and st.session_state["mostrar_invers
     ax.axis("equal")
     st.pyplot(fig)
 
-    # Guardar inversores actualizados
     session_state["inversores"] = inversores
     with open(STORAGE_FILE, "w", encoding="utf-8") as f:
         json.dump(session_state, f, ensure_ascii=False, indent=2)
