@@ -62,20 +62,14 @@ for i in range(num_socios):
         **{bloque: bloque_vals[j] for j, bloque in enumerate(pesos)}
     })
 
-mostrar_inversores = False
 if st.button("Calcular Participaciones"):
     if any(s[0] == "" for s in socios_data):
         st.error("⚠️ Todos los socios deben tener nombre.")
     else:
-        mostrar_inversores = True
+        st.session_state["mostrar_inversores"] = True
 
-if mostrar_inversores:
+if "mostrar_inversores" in st.session_state and st.session_state["mostrar_inversores"]:
     st.success("✔ Participaciones calculadas. Continúa con valoración y aportes.")
 
-    # Evita errores por variables aún no definidas
-    valor_final = 0
-    df = pd.DataFrame({"% Final Normalizado": [0]})
-    aportacion = 0
-
-    # Esto se reemplazará por el bloque real de cálculo
-    # Y las variables anteriores serán definidas correctamente antes de usar
+    # Aquí puedes seguir con valoración y bloque de inversores
+    st.header("(🧩 Aquí va la sección de valoración y aportes del inversor)")
