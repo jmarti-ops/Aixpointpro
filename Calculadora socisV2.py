@@ -66,10 +66,42 @@ if st.button("Calcular Participaciones"):
     if any(s[0] == "" for s in socios_data):
         st.error("⚠️ Todos los socios deben tener nombre.")
     else:
+        with open(STORAGE_FILE, "w", encoding="utf-8") as f:
+            json.dump(session_state, f, ensure_ascii=False, indent=2)
         st.session_state["mostrar_inversores"] = True
 
 if "mostrar_inversores" in st.session_state and st.session_state["mostrar_inversores"]:
     st.success("✔ Participaciones calculadas. Continúa con valoración y aportes.")
 
-    # Aquí puedes seguir con valoración y bloque de inversores
-    st.header("(🧩 Aquí va la sección de valoración y aportes del inversor)")
+    st.header("Valoración y Aportes del Inversor")
+    valoracion = st.number_input("Valoración total del proyecto (€)", min_value=1.0, step=1000.0)
+    num_inversores = st.number_input("Número de inversores", min_value=0, max_value=10, value=len(saved_session.get("inversores", [])))
+
+    inversores = []
+    for i in range(num_inversores):
+        nombre_inv = st.text_input(f"Nombre del inversor {i+1}", value=saved_session.get("inversores", [{}]*num_inversores)[i].get("nombre", ""), key=f"inv_nombre_{i}")
+        aporte = st.number_input(f"Aporte de {nombre_inv or 'Inversor '+str(i+1)} (€)", min_value=0.0, step=100.0, value=saved_session.get("inversores", [{}]*num_inversores)[i].get("aporte", 0.0), key=f"inv_aporte_{i}")
+        participacion = (aporte / valoracion * 100) if valoracion else 0.0
+        inversores.append({"nombre": nombre_inv, "aporte": aporte, "participacion": participacion})
+
+    total_socios = sum([s[-1] for s in socios_data])
+    socios_df = pd.DataFrame(socios_data, columns=["Nombre"] + list(pesos.keys()) + ["Blindado", "Horas", "CosteHora", "CosteTotal"])
+    socios_df["Participacion"] = socios_df["CosteTotal"] / (total_socios + sum(i["aporte"] for i in inversores)) * (100 - sum(i["participacion"] for i in inversores))
+
+    inversores_df = pd.DataFrame(inversores)
+    socios_chart = socios_df[["Nombre", "Participacion"]]
+    inversores_chart = inversores_df[["nombre", "participacion"]].rename(columns={"nombre": "Nombre", "participacion": "Participacion"})
+    chart_df = pd.concat([socios_chart, inversores_chart], ignore_index=True)
+
+    st.subheader("Distribución de Participaciones")
+    st.dataframe(chart_df)
+
+    fig, ax = plt.subplots()
+    ax.pie(chart_df["Participacion"], labels=chart_df["Nombre"], autopct="%1.1f%%")
+    ax.axis("equal")
+    st.pyplot(fig)
+
+    # Guardar inversores actualizados
+    session_state["inversores"] = inversores
+    with open(STORAGE_FILE, "w", encoding="utf-8") as f:
+        json.dump(session_state, f, ensure_ascii=False, indent=2)
