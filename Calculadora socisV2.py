@@ -119,7 +119,7 @@ if st.button("Calcular Participaciones"):
             with col1:
                 nombre = st.text_input(f"Nombre Inversor {i+1}", value=inv_data.get("nombre", ""), key=f"inversor_nombre_{i}")
             with col2:
-                aportacion = st.number_input(f"Aportación € Inversor {i+1}", min_value=0.0, value=inv_data.get("aportacion", 0.0), key=f"aportacion_{i}")
+                aportacion = st.number_input(f"Aportación € Inversor {i+1}", min_value=0.0, value=float(inv_data.get("aportacion", 0.0) or 0.0), key=f"aportacion_{i}")
             if aportacion > 0:
                 post_money = valor_final + aportacion
                 participacion = (aportacion / post_money) * 100
