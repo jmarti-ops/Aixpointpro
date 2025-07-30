@@ -73,3 +73,7 @@ if "mostrar_inversores" in st.session_state and st.session_state["mostrar_invers
 
     # Aquí puedes seguir con valoración y bloque de inversores
     st.header("(🧩 Aquí va la sección de valoración y aportes del inversor)")
+
+# Persistir el estado actual en disco para mantener los datos entre sesiones
+with open(STORAGE_FILE, "w", encoding="utf-8") as f:
+    json.dump(session_state, f, ensure_ascii=False, indent=2)
