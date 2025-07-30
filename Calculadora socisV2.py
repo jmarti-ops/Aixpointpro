@@ -69,90 +69,21 @@ if st.button("Calcular Participaciones"):
     else:
         mostrar_inversores = True
 
-        columnas = ["Socio"] + list(pesos.keys()) + ["% Blindado", "Horas", "€/Hora", "Coste Total"]
-        df = pd.DataFrame(socios_data, columns=columnas)
+if mostrar_inversores:
+    # ... (bloque de cálculo de socios y pre-money igual hasta inversores)
 
-        for b in pesos:
-            df[f"{b} (%)"] = (df[b] / 100) * pesos[b]
-        df["Participación Técnica"] = df[[f"{b} (%)" for b in pesos]].sum(axis=1)
-        df["% Final Bruto"] = df["Participación Técnica"] + df["% Blindado"]
-        total = df["% Final Bruto"].sum()
-        df["% Final Normalizado"] = df["% Final Bruto"] / total * 100 if total > 0 else 0
-        df["ROI por Socio (€)"] = (df["% Final Normalizado"] / 100) * df["Coste Total"].sum() - df["Coste Total"]
-        df = df.sort_values(by="% Final Normalizado", ascending=False)
-
-        st.subheader("Resultados")
-        st.dataframe(df)
-
-        fig, ax = plt.subplots()
-        ax.pie(df["% Final Normalizado"], labels=df["Socio"], autopct="%1.1f%%", startangle=90)
-        ax.axis("equal")
-        st.pyplot(fig)
-
-        st.header("Valoración Pre-Money y Participación de Inversores")
-
-        horas_totales = df["Horas"].sum()
-        coste_laboral_total = df["Coste Total"].sum()
-        st.write(f"Horas totales aportadas: **{horas_totales}**")
-        st.write(f"Coste laboral total: **{coste_laboral_total:,.2f} €**")
-
-        inversion_gastos = st.number_input("Gastos adicionales (€)", min_value=0.0, value=5000.0)
-        valor_coste = coste_laboral_total + inversion_gastos
-
-        usuarios_pro = st.number_input("Usuarios pago (12m)", 0, value=1000)
-        precio_mensual = st.number_input("Precio mensual (€)", 0.0, value=10.0)
-        margen_neto = st.slider("Margen neto (%)", 0, 100, 40)
-        multiplicador_valor = st.slider("Multiplicador valoración", 1, 10, 2)
-
-        ingresos_anuales = usuarios_pro * precio_mensual * 12
-        beneficio_estimado = ingresos_anuales * (margen_neto / 100)
-        valor_potencial = beneficio_estimado * multiplicador_valor
-        valor_final = (valor_coste + valor_potencial) / 2
-
-        st.subheader(f"Valoración pre-money estimada: **{valor_final:,.2f} €**")
-
-        st.markdown("### Inversores")
-        num_inversores = st.number_input("Cantidad de inversores", min_value=1, max_value=10, value=max(1, len(session_state.get("inversores", []))))
-        while len(session_state["inversores"]) < num_inversores:
-            session_state["inversores"].append({"nombre": "", "aportacion": 0.0})
-
-        inversores = []
-        for i in range(num_inversores):
-            col1, col2 = st.columns(2)
-            inv_data = session_state["inversores"][i]
-            with col1:
-                nombre = st.text_input(f"Nombre Inversor {i+1}", value=inv_data.get("nombre", ""), key=f"inversor_nombre_{i}")
-            with col2:
-                aportacion = st.number_input(f"Aportación € Inversor {i+1}", min_value=0.0, value=float(inv_data.get("aportacion", 0.0) or 0.0), key=f"aportacion_{i}")
-            if aportacion > 0:
-                post_money = valor_final + aportacion
-                participacion = (aportacion / post_money) * 100
-                disponible = 100 - df["% Final Normalizado"].sum()
+    # ... dentro del loop de inversores, validación extra:
+        if aportacion > 0:
+            post_money = valor_final + aportacion
+            participacion = (aportacion / post_money) * 100
+            disponible = 100 - df["% Final Normalizado"].sum()
+            if participacion > disponible:
+                st.error(f"❌ La participación ({participacion:.2f}%) supera el % disponible: {disponible:.2f}%")
+            else:
                 valor_part = (participacion / 100) * post_money
                 roi_est = valor_part - aportacion
                 disolucion = participacion
+                if roi_est <= 0:
+                    st.warning(f"⚠️ El ROI estimado para {nombre} es bajo o negativo: {roi_est:,.2f} €")
                 st.write(f"{nombre or 'Inversor'} participa con: **{participacion:.2f}%**, ROI: **{roi_est:,.2f} €**, Disolución: **{disolucion:.2f}%**")
-                if participacion > disponible:
-                    st.warning("⚠️ Supera % disponible de socios")
                 inversores.append({"nombre": nombre, "aportacion": aportacion, "participacion": participacion, "roi": roi_est, "disolucion": disolucion})
-
-        total_disolucion = sum([inv["disolucion"] for inv in inversores])
-        if total_disolucion > umbral_disolucion:
-            st.error(f"⚠️ La disolución total de inversores ({total_disolucion:.2f}%) supera el umbral definido de {umbral_disolucion}%")
-
-        session_state["inversores"] = inversores
-        session_state["umbral_disolucion"] = umbral_disolucion
-        with open(STORAGE_FILE, "w", encoding="utf-8") as f:
-            json.dump(session_state, f)
-
-        excel_buffer = BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-            df.to_excel(writer, index=False, sheet_name="Reparto Socios")
-            resumen = df[["Socio", "% Final Normalizado", "Coste Total", "ROI por Socio (€)"]]
-            resumen.to_excel(writer, index=False, sheet_name="Resumen ROI")
-            pre_df = pd.DataFrame({"Concepto": ["Costes", "Gastos", "Ingresos", "Beneficio", "Valor Potencial", "Valor Final"], "Valor": [valor_coste, inversion_gastos, ingresos_anuales, beneficio_estimado, valor_potencial, valor_final]})
-            pre_df.to_excel(writer, index=False, sheet_name="Pre-money")
-            if inversores:
-                inv_df = pd.DataFrame(inversores)
-                inv_df.to_excel(writer, index=False, sheet_name="Inversores")
-        st.download_button("📥 Descargar Excel completo", data=excel_buffer.getvalue(), file_name="reparto_valoracion.xlsx")
