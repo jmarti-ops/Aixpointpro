@@ -109,11 +109,13 @@ if st.button("Calcular Participaciones"):
         st.subheader(f"Valoración pre-money estimada: **{valor_final:,.2f} €**")
 
         st.markdown("### Inversores")
-        num_inversores = st.number_input("Cantidad de inversores", min_value=1, max_value=10, value=len(session_state["inversores"]) or 1)
+        num_inversores = st.number_input("Cantidad de inversores", min_value=1, max_value=10, value=max(1, len(session_state["inversores"])))
+        while len(session_state["inversores"]) < num_inversores:
+            session_state["inversores"].append({"nombre": "", "aportacion": 0.0})
         inversores = []
         for i in range(num_inversores):
             col1, col2 = st.columns(2)
-            inv_data = session_state["inversores"][i] if i < len(session_state["inversores"]) else {}
+            inv_data = session_state["inversores"][i]
             with col1:
                 nombre = st.text_input(f"Nombre Inversor {i+1}", value=inv_data.get("nombre", ""), key=f"inversor_nombre_{i}")
             with col2:
