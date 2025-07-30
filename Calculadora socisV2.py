@@ -62,10 +62,13 @@ for i in range(num_socios):
         **{bloque: bloque_vals[j] for j, bloque in enumerate(pesos)}
     })
 
+mostrar_inversores = False
 if st.button("Calcular Participaciones"):
     if any(s[0] == "" for s in socios_data):
         st.error("⚠️ Todos los socios deben tener nombre.")
     else:
+        mostrar_inversores = True
+
         columnas = ["Socio"] + list(pesos.keys()) + ["% Blindado", "Horas", "€/Hora", "Coste Total"]
         df = pd.DataFrame(socios_data, columns=columnas)
 
@@ -109,7 +112,7 @@ if st.button("Calcular Participaciones"):
         st.subheader(f"Valoración pre-money estimada: **{valor_final:,.2f} €**")
 
         st.markdown("### Inversores")
-        num_inversores = st.number_input("Cantidad de inversores", min_value=1, max_value=10, value=max(1, len(session_state["inversores"])))
+        num_inversores = st.number_input("Cantidad de inversores", min_value=1, max_value=10, value=max(1, len(session_state.get("inversores", []))))
         while len(session_state["inversores"]) < num_inversores:
             session_state["inversores"].append({"nombre": "", "aportacion": 0.0})
         inversores = []
@@ -119,7 +122,11 @@ if st.button("Calcular Participaciones"):
             with col1:
                 nombre = st.text_input(f"Nombre Inversor {i+1}", value=inv_data.get("nombre", ""), key=f"inversor_nombre_{i}")
             with col2:
-                aportacion = st.number_input(f"Aportación € Inversor {i+1}", min_value=0.0, value=float(inv_data.get("aportacion", 0.0) or 0.0), key=f"aportacion_{i}")
+                aportacion_val = inv_data.get("aportacion", 0.0)
+                try:
+                    aportacion = st.number_input(f"Aportación € Inversor {i+1}", min_value=0.0, value=float(aportacion_val), key=f"aportacion_{i}")
+                except Exception:
+                    aportacion = 0.0
             if aportacion > 0:
                 post_money = valor_final + aportacion
                 participacion = (aportacion / post_money) * 100
